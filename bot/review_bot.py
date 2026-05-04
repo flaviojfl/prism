@@ -1,5 +1,4 @@
 import os
-import google.generativeai as genai
 import requests
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
@@ -31,9 +30,6 @@ def get_pr_diff():
 
 
 def review_with_gemini(diff):
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
-
     prompt = f"""Você é um engenheiro de software sênior revisando um Pull Request.
 
 Analise o diff abaixo e forneça um review construtivo em português.
@@ -50,8 +46,16 @@ Seja direto e construtivo. Se o código estiver bom, diga isso também.
 
 {diff}
 """
-    response = model.generate_content(prompt)
-    return response.text
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    response = requests.post(url, json=payload)
+    response.raise_for_status()
+    data = response.json()
+    return data["candidates"][0]["content"]["parts"][0]["text"]
+
 
 def post_comment(review):
     url = f"{GITHUB_API}/repos/{REPO_NAME}/issues/{PR_NUMBER}/comments"
