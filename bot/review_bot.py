@@ -32,7 +32,7 @@ def get_pr_diff():
 
 def review_with_gemini(diff):
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     prompt = f"""Você é um engenheiro de software sênior revisando um Pull Request.
 
