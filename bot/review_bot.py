@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 GH_TOKEN = os.environ["GH_TOKEN"]
@@ -51,10 +52,19 @@ Seja direto e construtivo. Se o código estiver bom, diga isso também.
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
     }
-    response = requests.post(url, json=payload)
-    response.raise_for_status()
-    data = response.json()
-    return data["candidates"][0]["content"]["parts"][0]["text"]
+
+    for attempt in range(3):
+        response = requests.post(url, json=payload)
+        if response.status_code == 429:
+            wait = 30 * (attempt + 1)
+            print(f"Rate limited. Esperando {wait}s...")
+            time.sleep(wait)
+            continue
+        response.raise_for_status()
+        data = response.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+
+    raise Exception("Gemini API indisponível após 3 tentativas.")
 
 
 def post_comment(review):
