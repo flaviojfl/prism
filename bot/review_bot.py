@@ -50,10 +50,8 @@ Seja direto e construtivo. Se o código estiver bom, diga isso também.
 
 {diff}
 """
-
     response = model.generate_content(prompt)
     return response.text
-
 
 def post_comment(review):
     url = f"{GITHUB_API}/repos/{REPO_NAME}/issues/{PR_NUMBER}/comments"
