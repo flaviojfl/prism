@@ -1,8 +1,8 @@
 import os
-import requests
 import time
+import requests
 
-GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 GH_TOKEN = os.environ["GH_TOKEN"]
 PR_NUMBER = os.environ["PR_NUMBER"]
 REPO_NAME = os.environ["REPO_NAME"]
@@ -30,7 +30,7 @@ def get_pr_diff():
     return diff_text
 
 
-def review_with_gemini(diff):
+def review_with_groq(diff):
     prompt = f"""Você é um engenheiro de software sênior revisando um Pull Request.
 
 Analise o diff abaixo e forneça um review construtivo em português.
@@ -48,13 +48,19 @@ Seja direto e construtivo. Se o código estiver bom, diga isso também.
 {diff}
 """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
     }
 
     for attempt in range(3):
-        response = requests.post(url, json=payload)
+        response = requests.post(url, headers=headers, json=payload)
         if response.status_code == 429:
             wait = 30 * (attempt + 1)
             print(f"Rate limited. Esperando {wait}s...")
@@ -62,9 +68,9 @@ Seja direto e construtivo. Se o código estiver bom, diga isso também.
             continue
         response.raise_for_status()
         data = response.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"]
+        return data["choices"][0]["message"]["content"]
 
-    raise Exception("Gemini API indisponível após 3 tentativas.")
+    raise Exception("Groq API indisponível após 3 tentativas.")
 
 
 def post_comment(review):
@@ -83,8 +89,8 @@ def main():
         print("Nenhuma alteração encontrada.")
         return
 
-    print("Enviando para o Gemini...")
-    review = review_with_gemini(diff)
+    print("Enviando para o Groq...")
+    review = review_with_groq(diff)
 
     print("Postando comentário na PR...")
     post_comment(review)
